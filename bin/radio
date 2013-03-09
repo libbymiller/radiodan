@@ -1,26 +1,23 @@
 #!/usr/bin/env ruby
-require 'pathname'
-require 'yaml'
-
 require 'rubygems'
 require 'bundler/setup'
+
+require 'pathname'
+require 'yaml'
 
 ROOT = File.join(File.dirname(__FILE__), '..')
 
 require_relative '../lib/radio'
-require_relative '../lib/web_app'
 
 $PROGRAM_NAME = 'radio_server'
 
 EM.synchrony do  
   config = YAML.load_file(File.join(ROOT, 'config.yml'))
   @radio = Radio.new(config)
-
-  # start web interface
-  Thin::Server.start WebApp, '0.0.0.0', 3000
   
   # graceful shutdown of service
   # also stops MPD
+=begin
   %w{INT TERM SIGHUP SIGINT SIGTERM}.each do |signal|
     Signal.trap(signal) do
       puts "Trapped #{signal}"
@@ -33,6 +30,7 @@ EM.synchrony do
       end
     end
   end
+=end
 
   EM.error_handler do |e|
     puts "Error raised during event loop: #{e.message}"
@@ -41,5 +39,20 @@ EM.synchrony do
   
   EM::Synchrony.next_tick do
     @radio.start
+  end
+  
+  
+  EM::Synchrony.next_tick do
+    require 'socket'
+    SocketFile = File.join(File.dirname(__FILE__), '../tmp/socket')
+    puts 'unix'
+    server = UNIXServer.new('/tmp/file.sock')
+    server.accept
+
+    EM.now_and_every(seconds: 0.5) do
+      puts msg
+      msg = "HELLOFROMSERVER\n"
+      server.sendio(msg)
+    end
   end
 end

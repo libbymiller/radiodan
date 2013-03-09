@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 group :development do
   gem 'vagrant', '~> 0.5.4'
+  gem 'shotgun'
 end
 
 group :eventmachine do
