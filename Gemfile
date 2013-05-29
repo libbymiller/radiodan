@@ -24,9 +24,18 @@ group :web do
   gem 'sinatra',  '~> 1.3.5'
 end
 
+
+# guessing at the version
+group :gpio do
+  gem 'pi_piper',  '~> 1.3.1'
+end
+
+
 group :deploy do
   gem 'foreman',  '~> 0.62.0'
 end
+
+
 
 group :test do
   gem 'pry', '~> 0.9.12'

@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+=begin
+ A bit feebly, this creates a file 
+ tmp/panic when a button is pressed,
+ which touch_file can then pick up. 
+
+ Needs running separately, as sudo ./bin/read_button
+
+ Uses https://github.com/jwhitehorn/pi_piper
+ Wiring: http://www.flickr.com/photos/nicecupoftea/8878396292/
+
+=end
+
+require 'pi_piper'
+include PiPiper
+
+ROOT = File.join(File.dirname(__FILE__), '..')
+PATH  = File.join(ROOT, 'tmp')
+
+after :pin => 17, :goes => :high do
+  puts "Button pressed"
+  filename = File.join(PATH, "panic")
+  File.open(filename, 'w') { |file| file.write(Time.now) }
+end
+
+PiPiper.wait
