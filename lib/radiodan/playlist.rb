@@ -39,7 +39,7 @@ class Playlist
     self.tracks   = options.fetch(:tracks, Array.new)
     self.position = options.fetch(:position, 0)
     self.seek     = options.fetch(:seek, 0.0)
-    self.volume   = options.fetch(:volume, 100)
+    self.volume   = options.fetch(:volume, 70)
   end
 
   def current
