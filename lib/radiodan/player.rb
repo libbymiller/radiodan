@@ -9,7 +9,7 @@ class Player
   include Logging
   include EventBinding
   
-  attr_reader :adapter, :playlist
+  attr_reader :adapter, :playlist, :playlist_changed
   def_delegators :adapter, :stop
   
   def adapter=(adapter)
@@ -25,7 +25,7 @@ class Player
     @playlist = new_playlist
     trigger_event(:playlist, @playlist)
     # run sync to explicitly conform to new playlist?
-    
+    @playlist_changed = true    
     @playlist
   end
   
@@ -46,6 +46,13 @@ class Player
     expected = playlist
 
     sync = Radiodan::PlaylistSync.new expected, current
+
+    # once the playlist has changed it needs to be triggered *after* the first sync, hence this.
+    if(@playlist_changed)
+      logger.debug "Playlist changed, triggering event playlist_changed"
+      trigger_event :playlist_changed, state
+      @playlist_changed = false
+    end
 
     if sync.sync?
       true
