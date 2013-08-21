@@ -60,7 +60,7 @@ class Player
       # playback state
       if sync.errors.include? :state
         logger.debug "Expected: #{expected.state} Got: #{current.state}"
-        trigger_event :play_state, expected.state
+        trigger_event :play_state, current.state
       end
       
       if sync.errors.include? :mode
