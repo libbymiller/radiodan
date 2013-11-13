@@ -3,7 +3,12 @@ require 'playlist'
 
 describe Radiodan::Playlist do
   describe 'default attributes' do
-    it 'has a state of playing' do
+    it 'has a state of stop' do
+      subject.state.should == :stop
+    end
+    
+    it 'has a state of play if there are tracks' do
+      subject.tracks << mock
       subject.state.should == :play
     end
 
@@ -33,9 +38,22 @@ describe Radiodan::Playlist do
   end
 
   describe 'playback state' do
-    it 'can be set' do
-      subject.state = :play
-      subject.state.should == :play
+    it 'is always stop if playlist is empty' do
+      subject.empty?.should be_true
+
+      subject.state = :pause
+      subject.state.should == :stop
+      
+      subject.tracks << mock
+      
+      subject.empty?.should be_false
+      subject.state.should == :pause
+    end
+    
+    it 'can be set if tracks are present' do
+      subject.tracks << mock
+      subject.state = :pause
+      subject.state.should == :pause
     end
 
     it 'cannot be set to an unknown state' do
@@ -68,6 +86,17 @@ describe Radiodan::Playlist do
       
       subject.repeat = 'true'
       subject.repeat.should == false
+    end
+  end
+
+  describe 'random mode' do
+    it 'is off by default' do
+      subject.random?.should == false
+    end
+    
+    it 'can be set' do
+      subject.mode = :random
+      subject.random?.should == true
     end
   end
 
@@ -142,6 +171,19 @@ describe Radiodan::Playlist do
       expect { subject.volume = '999' }.to raise_error subject.class::VolumeError
       expect { subject.volume = -29 }.to raise_error subject.class::VolumeError
       subject.volume.should == 100
+    end
+  end
+  
+  describe 'attributes' do
+    it 'should be well formed' do
+      expected = {:state=>:stop, :mode=>:sequential, :repeat=>false, :tracks=>[], :position=>0, :seek=>0.0, :volume=>100}
+      expect subject.attributes.should == expected
+    end
+    
+    it 'should include track attributes' do
+      subject.tracks << Radiodan::Track.new(:file => 'dan.mp3')
+      expected = {:state=>:play, :mode=>:sequential, :repeat=>false, :tracks=>[{'file' => 'dan.mp3'}], :position=>0, :seek=>0.0, :volume=>100}
+      expect subject.attributes.should == expected      
     end
   end
 end

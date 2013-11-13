@@ -1,5 +1,9 @@
+require 'logging'
+
 class Radiodan
 class PlaylistSync
+  include Logging
+  
   class SyncError < Exception; end
   attr_accessor :expected, :current
   attr_reader   :errors
@@ -11,37 +15,57 @@ class PlaylistSync
   end
   
   def sync?
-    prerequisites_check
-    compare_playback_state & compare_playback_mode & compare_playlist
-  end
-  
-  private
-  def prerequisites_check
-    raise SyncError, 'No expected playlist to compare to' if expected.nil?
-    raise SyncError, 'No current playlist to compare to'  if current.nil?
-  end
-  
-  def compare_playback_state
-    # add rules about when this is ok to be out of sync
-    # e.g. sequential expected runs out of tracks and stops
-    compare(:state) { @expected.state == @current.state }
-  end
-
-  def compare_playback_mode
-    compare(:mode) { @expected.mode == @current.mode }
-  end
-
-  def compare_playlist
-    compare(:playlist) do
-      @expected.size == @current.size && \
-      @expected.tracks == @current.tracks
+    if ready?
+      compare_playback_state & compare_playback_mode & compare_tracks & compare_volume
     end
   end
   
-  def compare(type, &blk)
+  def ready?
+    if expected.nil? || current.nil?
+      logger.warn 'Require two playlists to compare'
+      false
+    else
+      true
+    end
+  end
+  
+  private
+  def compare_playback_state
+    # add rules about when this is ok to be out of sync
+    # e.g. sequential expected runs out of tracks and stops
+    report(:state) { @expected.state != @current.state }
+  end
+
+  def compare_playback_mode
+    report(:mode) { @expected.mode != @current.mode }
+  end
+
+  def compare_tracks
+    report(:add_tracks) do
+      # more tracks are added and
+      # original tracks are all in the same position in playlist
+      @expected.size > @current.size && !@current.empty? &&
+      @current.tracks.all? {|x| i=@current.tracks.index(x); @expected.tracks[i] == x }
+    end
+    
+    return false if errors.include?(:add_tracks)
+    
+    report(:new_tracks) do
+      @expected.size != @current.size ||
+      @expected.tracks != @current.tracks
+    end
+  end
+  
+  def compare_volume
+    report(:volume) do
+      @expected.volume != @current.volume
+    end
+  end
+  
+  def report(type, &blk)
     result = blk.call
-    errors << type unless result
-    result
+    errors << type if result
+    !result
   end
 end
 end

@@ -23,12 +23,9 @@ class Radiodan
     
     EM.synchrony do
       trap_signals!
+      EventMachine::Synchrony.next_tick { @builder.call_middleware! }
       
-      EM::Synchrony.next_tick do      
-        @builder.call_middleware!
-      end
-
-      EM.now_and_every(seconds: 1) do
+      EM::Synchrony.add_periodic_timer(1) do
         logger.info "SYNC!"
         player.sync if player
       end
@@ -58,7 +55,10 @@ class Radiodan
   end
   
   def stop_player_on_exit
-    at_exit { stop }
+    at_exit do
+      logger.info 'Stopping player'
+      stop
+    end
   end
   
   def trap_signals!

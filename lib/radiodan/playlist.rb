@@ -30,7 +30,7 @@ class Playlist
   MODES  = [:sequential, :resume, :random]
   attr_reader :state, :mode, :repeat, :tracks, :position, :seek, :volume
   alias_method :repeat?, :repeat
-  def_delegators :@tracks, :size
+  def_delegators :@tracks, :size, :length, :empty?
 
   def initialize(options={})
     self.state    = options.fetch(:state, STATES.first)
@@ -47,9 +47,13 @@ class Playlist
   end
   
   def random?
-    mode == :random
+    self.mode == :random
   end
-
+  
+  def state
+    empty? ? :stop : @state
+  end
+  
   def state=(new_state)
     state = new_state.to_sym
 
@@ -114,5 +118,16 @@ class Playlist
     
     @volume = new_volume
   end
+  
+  def attributes
+    { :state    => state,
+      :mode     => mode,
+      :repeat   => repeat,
+      :tracks   => begin tracks.collect(&:attributes) rescue []; end,
+      :position => position,
+      :seek     => seek,
+      :volume   => volume }
+  end
+  alias_method :as_json, :attributes
 end
 end

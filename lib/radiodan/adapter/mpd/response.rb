@@ -4,26 +4,29 @@ require_relative 'ack'
 class Radiodan
   class MPD
   class Response
-    class AckError < Exception; end
     include Logging
     attr_accessor :value, :string
     alias_method  :to_s, :string
     
-    MULTILINE_COMMANDS = %w{playlistinfo}
+    MULTILINE_COMMANDS = %w{playlistinfo search find}
     
     def initialize(response_string, command=nil)
       @string  = response_string
       @command = command
       @value   = parse(@string, @command)
-      
+            
       if ack?
         logger.error "ACK #{@command}, #{@value.inspect}"
-        raise Response::AckError, @value.description
+        raise AckError, @value.description
       end
     end
     
     def ack?
       value.is_a?(Ack)
+    end
+    
+    def ==(other)
+      self.value == other
     end
     
     def method_missing(method, *args, &block)
@@ -54,7 +57,7 @@ class Radiodan
       when response.split.size == 1
         # set value -> value
         Hash[*(response.split.*2)]
-      when MULTILINE_COMMANDS.include?(command)
+      when MULTILINE_COMMANDS.include?(command.split.first)
         # create array of hash values
         parse_multiline(response)
       else
@@ -68,11 +71,11 @@ class Radiodan
       values = {}
       
       split_response(response) do |key, value|
-        if values.include?(key)
+        if key == 'file' && values.has_key?('file')
           multiline << values
           values = {}
         end
-        
+                
         values[key] = value
       end
       
@@ -81,10 +84,11 @@ class Radiodan
     
     def split_response(response)
       response = response.split("\n")
-      # remove first response: "OK"
-      response.pop
       
       response.collect do |r| 
+        # remove "OK" responses
+        next if r == 'OK'
+        
         split = r.split(':')
         key   = split.shift.strip
         value = split.join(':').strip
@@ -92,7 +96,7 @@ class Radiodan
         yield(key, value) if block_given?
         
         [key, value]
-      end
+      end.compact
     end
   end
 end
