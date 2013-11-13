@@ -17,7 +17,8 @@ class Radiodan
             
       if ack?
         logger.error "ACK #{@command}, #{@value.inspect}"
-        raise AckError, @value.description
+## don't raise error, barfs
+##        raise AckError, @value.description
       end
     end
     
